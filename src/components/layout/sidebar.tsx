@@ -1,8 +1,6 @@
 import { itemMenu } from "@/lib/types/sidebar-menu";
 import { LuHome } from "react-icons/lu";
 import { CiFileOn } from "react-icons/ci";
-
-import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
 const listMenu: itemMenu[] = [

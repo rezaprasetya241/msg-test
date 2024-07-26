@@ -7,7 +7,7 @@ import Logo from "../../assets/pln.svg";
 
 const Navbar = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [username, setUsername] = useState("John Doe");
+  const [username] = useState("John Doe");
   return (
     <div className="bg-gradient-to-r from-[#18A2BA] to-[#296377] flex items-center px-6 justify-between text-white py-2">
       <div className="flex items-center gap-5">
