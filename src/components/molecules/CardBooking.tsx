@@ -9,7 +9,7 @@ interface Props {
 
 const CardBooking = ({ item }: Props) => {
   return (
-    <Card className="max-w-[240px] bg-[#F2F2F2]">
+    <Card className="w-[240px] bg-[#F2F2F2]">
       <CardContent className="flex flex-col gap-2 p-3">
         <p>{item.roomName}</p>
         <div className="flex items-center gap-3 justify-between">

@@ -1,12 +1,16 @@
 import { useEffect, useRef } from "react";
+import { useFormContext } from "react-hook-form";
 
 interface Props {
   disabled?: boolean;
-  value?: string | number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
 }
 const CurrencyInput = ({ disabled, value }: Props) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const { register } = useFormContext();
   useEffect(() => {
     const handleFocus = () => {
       if (parentRef.current) {
@@ -40,10 +44,9 @@ const CurrencyInput = ({ disabled, value }: Props) => {
     >
       <span className="bg-gray-200 px-3 py-2 text-gray-700">Rp.</span>
       <input
-        ref={inputRef}
         type="text"
         disabled={disabled}
-        value={value}
+        {...register(value)}
         // onChange={onChange}
         className="flex-1 px-3 py-2 outline-none text-sm transition-colors file:border-0 file:bg-transparent placeholder:text-muted-foreground"
         placeholder="0"

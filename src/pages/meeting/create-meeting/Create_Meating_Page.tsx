@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useKonsumsi, useRooms, useUnits } from "@/api/query/unit";
-import { useEffect } from "react";
+import { ChangeEvent } from "react";
 
 const listUrl: BreadcrumbItems[] = [
   {
@@ -57,17 +57,29 @@ const listUrl: BreadcrumbItems[] = [
 
 const CreateMeetingPage = () => {
   const router = useNavigate();
-  const formSchema = z.object({
-    unit: z.string().optional(),
-    room_name: z.string().optional(),
-    capacity: z.number().optional(),
-    meet_date: z.date(),
-    meet_start: z.string().optional(),
-    meet_end: z.string().optional(),
-    total_participant: z.string().optional(),
-    food_type: z.string().optional(),
-    total_price: z.string().optional(),
-  });
+  const formSchema = z
+    .object({
+      unit: z.string().optional(),
+      room_name: z.string().optional(),
+      capacity: z.number(),
+      meet_date: z.date(),
+      meet_start: z.string().optional(),
+      meet_end: z.string().optional(),
+      total_participant: z.string().optional(),
+      food_type: z.string().optional(),
+      total_price: z.string().optional(),
+    })
+    .refine(
+      (data) => Number(data?.capacity) > Number(data?.total_participant),
+      {
+        message: "Total Participant cant be more thant capacity",
+        path: ["total_participant"],
+      }
+    )
+    .refine((data) => Number(data.meet_start) < Number(data.meet_end), {
+      message: "End Date can't be less than start date",
+      path: ["meet_end"],
+    });
   const { data } = useUnits();
   const { data: dataRooms } = useRooms();
   const { data: dataKonsumsi } = useKonsumsi();
@@ -78,7 +90,7 @@ const CreateMeetingPage = () => {
     resolver: zodResolver(formSchema),
   });
   const onSubmit = () => {
-    console.log("submited");
+    console.log("submited: ", form.getValues());
   };
 
   const getFoodType = (meetStart: string) => {
@@ -92,36 +104,30 @@ const CreateMeetingPage = () => {
     }
   };
 
-  const rooms = form.watch("room_name");
-  const meet_start = form.watch("meet_start");
-  const capacity = form.watch("capacity");
-  const participants = form.watch("total_participant");
-  useEffect(() => {
-    if (rooms) {
-      const index = dataRooms?.findIndex((item) => item.id === rooms);
-      if (index !== -1 && index !== undefined) {
-        form.setValue("capacity", dataRooms?.[index]?.capacity);
-      }
-    }
-  }, [rooms]);
-  useEffect(() => {
-    if (meet_start) {
-      getFoodType(meet_start);
-    }
-  }, [meet_start]);
-
-  useEffect(() => {
-    if (participants) {
+  const participantPrice = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(event.target.value) || 0;
+    if (value) {
       const index = dataKonsumsi?.findIndex(
         (item) => item.name === form.getValues("food_type")
       );
       if (index !== -1 && index !== undefined) {
-        const sum =
-          Number(dataKonsumsi?.[index]?.maxPrice) * Number(participants);
+        const sum = Number(dataKonsumsi?.[index]?.maxPrice) * Number(value);
         form.setValue("total_price", String(sum));
       }
+    } else {
+      form.setValue("total_price", "0");
     }
-  }, [participants]);
+  };
+
+  const handleCapacity = (event: string) => {
+    if (dataRooms) {
+      const index = dataRooms.findIndex((item) => item.id === event);
+      if (index > -1 && index !== undefined && dataRooms) {
+        form.setValue("capacity", dataRooms?.[index].capacity);
+      }
+    }
+  };
+
   return (
     <div>
       <div className="flex gap-4">
@@ -199,7 +205,10 @@ const CreateMeetingPage = () => {
                         <FormItem>
                           <FormLabel>Ruang Meeting</FormLabel>
                           <Select
-                            onValueChange={field.onChange}
+                            onValueChange={(e) => {
+                              handleCapacity(e);
+                              field.onChange(e);
+                            }}
                             defaultValue={field.value}
                           >
                             <FormControl>
@@ -228,17 +237,11 @@ const CreateMeetingPage = () => {
                 </div>
                 <div className="grid grid-cols-4 gap-5">
                   <div className="flex flex-col gap-2">
-                    <FormField
-                      control={form.control}
-                      name="capacity"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Kapasitas</FormLabel>
-                          <FormControl>
-                            <Input placeholder="0" disabled {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
+                    <FormLabel>Kapasitas</FormLabel>
+                    <Input
+                      placeholder="0"
+                      disabled
+                      {...form.register("capacity")}
                     />
                   </div>
                 </div>
@@ -284,11 +287,7 @@ const CreateMeetingPage = () => {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                disabled={(date: any) =>
-                                  date > new Date() ||
-                                  date < new Date("1900-01-01")
-                                }
+                                disabled={(date: Date) => date < new Date()}
                                 initialFocus
                               />
                             </PopoverContent>
@@ -306,7 +305,10 @@ const CreateMeetingPage = () => {
                         <FormItem className="flex flex-col">
                           <FormLabel>Waktu Mulai</FormLabel>
                           <Select
-                            onValueChange={field.onChange}
+                            onValueChange={(e) => {
+                              getFoodType(e);
+                              field.onChange(e);
+                            }}
                             defaultValue={field.value}
                           >
                             <FormControl>
@@ -362,21 +364,12 @@ const CreateMeetingPage = () => {
 
                 <div className="grid grid-cols-4 gap-5">
                   <div className="flex flex-col gap-2">
-                    <FormField
-                      control={form.control}
-                      name="total_participant"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Jumlah peserta</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="Masukan jumlah peserta"
-                              {...field}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
+                    <FormLabel>Jumlah Peserta</FormLabel>
+                    <Input
+                      type="number"
+                      onChangeCapture={participantPrice}
+                      placeholder="Masukan jumlah peserta"
+                      {...form.register("total_participant")}
                     />
                   </div>
                 </div>
@@ -437,10 +430,7 @@ const CreateMeetingPage = () => {
                   <div className="flex flex-col gap-4">
                     <Label>Nominal Konsumsi</Label>
                     <div>
-                      <CurrencyInput
-                        disabled
-                        value={form.watch("total_price")}
-                      />
+                      <CurrencyInput disabled value="total_price" />
                     </div>
                   </div>
                 </div>
@@ -460,12 +450,7 @@ const CreateMeetingPage = () => {
                 <Button
                   type="submit"
                   className="bg-main"
-                  disabled={
-                    !form.formState.isValid ||
-                    Number(capacity) < Number(participants) ||
-                    Number(form.watch("meet_start")) >
-                      Number(form.watch("meet_end"))
-                  }
+                  disabled={!form.formState.isValid || !form.formState.isDirty}
                 >
                   Simpan
                 </Button>

@@ -24,7 +24,7 @@ const HomePage = () => {
         <Label>Periode</Label>
         <Select value={periode} onValueChange={handleChange}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select a fruit" />
+            <SelectValue placeholder="Select periode" />
           </SelectTrigger>
           <SelectContent>
             {data?.map((item, key) => {
